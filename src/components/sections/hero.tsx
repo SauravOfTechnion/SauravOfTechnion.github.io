@@ -1,8 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
 import { GoldenSpiral } from "@/components/golden-spiral";
 import { profile } from "@/data/profile";
+
+const GuidanceStage = dynamic(
+  () => import("@/components/guidance-stage").then((mod) => mod.GuidanceStage),
+  { ssr: false, loading: () => <GoldenSpiral /> },
+);
 
 export function Hero() {
   const reduce = useReducedMotion();
@@ -61,7 +67,7 @@ export function Hero() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         >
-          <GoldenSpiral />
+          {reduce ? <GoldenSpiral /> : <GuidanceStage />}
         </motion.div>
       </div>
       <nav className="hero-floor" aria-label="Interests">
