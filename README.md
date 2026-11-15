@@ -30,8 +30,15 @@ Run `node scripts/validate-model.mjs` to check geometry, materials, embedded
 textures, and the GLB structure. GitHub Actions runs this before the static build.
 The loading/WebGL fallback is a studio render of this same model.
 
-`src/lib/sculptures.ts` builds the gyroscopic aircraft, neural constellation, and
-feedback knot. `src/components/object-lab.tsx` provides selection and motion controls.
+`src/lib/sculptures.ts` builds the procedural and model-backed Three.js sculptures:
+- **Hero & ObjectLab**: Concert Violin (`public/models/violin.glb`), Gyroscopic Guidance Stage (`flight`), Neural Constellation (`neural`), and Reward Feedback Knot (`learning`).
+- **About — Geodesic Career Orbit (`orbit`)**: Armillary sphere with 5 glowing trajectory waypoints (`IIT Madras → JLR → BharatSemi → JPMorganChase → Technion`) connected by great-circle arcs.
+- **Experience — Role-Specific 3D Instruments**:
+  - `jpmorgan`: Octagonal Quant Vault emblem, 3D candlestick/yield-curve pillars, and orbiting TrustGPT ledger plates.
+  - `semiconductor`: Multi-layer PCB & silicon wafer die with 64 gold QFP edge pins, 16 pulsing TensorRT compute cores, and an EO/IR optical reticle.
+  - `jlr`: British Racing Green Grand-Tourer fastback silhouette with sculpted oval badge halo, rotating multi-spoke alloy wheels, wind-tunnel streamlines, and 360° ADAS LiDAR + Audionostics acoustic wave rings.
+
+`src/components/object-lab.tsx` and `src/components/sculpture-pod.tsx` provide interactive 3D instrument pods, mode switching, telemetry strips, and motion controls across sections.
 
 Drag horizontally or vertically to rotate (touch preserves vertical page scrolling).
 Keyboard users can focus the sculpture, rotate with the arrow keys, and reset with

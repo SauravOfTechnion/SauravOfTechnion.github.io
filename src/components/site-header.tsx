@@ -10,14 +10,36 @@ const links = [
   { href: "#experience", label: "Experience" },
   { href: "#projects", label: "Projects" },
   { href: "#publications", label: "Publications" },
+  { href: "#skills", label: "Skills" },
   { href: "#contact", label: "Contact" },
 ] as const;
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [activeSection, setActiveSection] = useState<string>("");
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 16);
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 16);
+      const maxScroll = Math.max(
+        document.documentElement.scrollHeight - window.innerHeight,
+        1,
+      );
+      setProgress(Math.min(1, Math.max(0, y / maxScroll)));
+
+      let current = "";
+      for (const link of links) {
+        const id = link.href.slice(1);
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 180) current = link.href;
+        }
+      }
+      setActiveSection(current);
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -34,7 +56,11 @@ export function SiteHeader() {
         </a>
         <nav className="site-nav site-nav-desktop" aria-label="Primary">
           {links.map((link) => (
-            <a key={link.href} href={link.href}>
+            <a
+              key={link.href}
+              href={link.href}
+              aria-current={activeSection === link.href ? "location" : undefined}
+            >
               {link.label}
             </a>
           ))}
@@ -53,11 +79,20 @@ export function SiteHeader() {
       </div>
       <nav className="site-nav site-nav-mobile" aria-label="Sections">
         {links.map((link) => (
-          <a key={link.href} href={link.href}>
+          <a
+            key={link.href}
+            href={link.href}
+            aria-current={activeSection === link.href ? "location" : undefined}
+          >
             {link.label}
           </a>
         ))}
       </nav>
+      <div
+        className="scroll-progress"
+        style={{ transform: `scaleX(${progress.toFixed(4)})` }}
+        aria-hidden="true"
+      />
     </header>
   );
 }
