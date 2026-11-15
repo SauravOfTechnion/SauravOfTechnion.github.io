@@ -5,6 +5,7 @@ import {
   ViolinMark,
 } from "@/components/interest-art";
 import { interests } from "@/data/interests";
+import { ObjectLab } from "@/components/object-lab";
 
 const marks = {
   violin: ViolinMark,
@@ -20,17 +21,27 @@ export function Interests() {
       className="section-shell interests"
       aria-labelledby="interests-title"
     >
-      <div className="section-head split-phi">
+      <div className="manifesto">
+        <p className="chapter-label">The through-line</p>
+        <h2 id="interests-title">A string finds its resonance.<br />An aircraft finds its path.<br />A machine learns its world.</h2>
+        <p>Different systems. The same beautiful problem: sensing what is happening,
+          deciding what comes next, and learning from the answer.</p>
+      </div>
+      <div className="instrument-chapter">
+      <div className="section-head">
         <div>
-          <h2 id="interests-title">What I keep returning to</h2>
+          <p className="chapter-label">Beyond the equations</p>
+          <h2>It starts<br />with listening.</h2>
           <p className="section-lede">
-            Four practices, drawn as instruments. The work below is the public
-            record of the same habits.
+            From the resonance of a string to a machine learning to navigate.
+            These are the worlds I keep coming back to.
           </p>
         </div>
         <p className="section-aside">
-          Violin varnish on one side of the glass. Learning systems on the other.
+          Music taught me to listen. Engineering taught me to ask why.
         </p>
+      </div>
+      <ObjectLab />
       </div>
       <div className="interest-grid">
         {interests.map((item) => {
@@ -39,7 +50,7 @@ export function Interests() {
             <article
               key={item.id}
               id={item.id}
-              className="interest-lens glass"
+              className="interest-lens"
               data-tone={item.tone}
             >
               <div className="interest-art">

@@ -1,0 +1,10 @@
+{
+  "body_length_mm": 355,
+  "upper_bout_mm": 168,
+  "lower_bout_mm": 206,
+  "neck_length_mm": 130,
+  "fingerboard_length_mm": 270,
+  "source": "Original Blender geometry and generated embedded wood-grain textures",
+  "glb_bytes": 6102712,
+  "objects": 93
+}

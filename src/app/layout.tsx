@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Source_Serif_4, Syne } from "next/font/google";
+import { IBM_Plex_Mono, Syne } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { profile } from "@/data/profile";
@@ -9,12 +9,6 @@ const display = Syne({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["500", "600", "700", "800"],
-});
-
-const body = Source_Serif_4({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
 });
 
 const mono = IBM_Plex_Mono({
@@ -41,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${display.variable} ${body.variable} ${mono.variable} h-full dark`}
+      className={`${display.variable} ${mono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>

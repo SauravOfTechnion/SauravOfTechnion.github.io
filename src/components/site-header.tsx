@@ -5,12 +5,11 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { profile } from "@/data/profile";
 
 const links = [
-  { href: "#interests", label: "Interests" },
+  { href: "#interests", label: "My universe" },
   { href: "#about", label: "About" },
   { href: "#experience", label: "Experience" },
   { href: "#projects", label: "Projects" },
   { href: "#publications", label: "Publications" },
-  { href: "#skills", label: "Skills" },
   { href: "#contact", label: "Contact" },
 ] as const;
 

@@ -13,9 +13,10 @@ export function Contact() {
     >
       <div className="contact-panel split-phi">
         <div>
-          <h2 id="contact-title">Contact</h2>
+          <h2 id="contact-title">Let’s make<br />something matter.</h2>
           <p className="section-lede">
-            Public channels only — Technion campus email and LinkedIn.
+            A research question, a collaboration, or a good conversation.
+            I’d love to hear what you’re thinking about.
           </p>
         </div>
         <div className="contact-actions">
@@ -34,8 +35,7 @@ export function Contact() {
       </div>
       <footer className="site-footer">
         <p>
-          © {new Date().getFullYear()} {profile.name}. Layout proportions follow φ =
-          1.618.
+          © {new Date().getFullYear()} {profile.name}
         </p>
         <p>
           <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer">

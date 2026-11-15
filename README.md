@@ -6,11 +6,45 @@ Production portfolio for **GitHub Pages** (`https://sauravoftechnion.github.io`)
 
 - Next.js (static `output: 'export'`) + React 19 + TypeScript
 - Tailwind CSS v4 design tokens encoding the φ scale
-- Framer Motion (hero only; respects `prefers-reduced-motion`)
+- Procedural Three.js sculptures, loaded on demand into one shared WebGL canvas
+- CSS entrance animation; motion controls and `prefers-reduced-motion` support
 - `next-themes` dark / light / system
 - Live GitHub metadata (stars, language, description) at **build time**
 
-## Design system (φ)
+## Interactive field notes
+
+An original green streamline landscape responds to the pointer. Warm mineral
+paper sections tell the story of motion, perception, learning, and musical
+feedback. The visual direction is informed by Genomines, with original artwork,
+personal writing, and a portfolio-specific structure.
+
+The violin is an original Blender model made for this portfolio, with a 355 mm
+body, carved arched spruce and maple plates, actual f-hole openings, inlaid
+purfling, a cambered fingerboard, carved bridge, scroll, ebony pegs, strings,
+chinrest and separate bow. Both wood textures are embedded in the local GLB.
+No model CDN or asset download is required at build or runtime.
+
+Editable Blender source: `art/violin/violin.blend`. Regenerate the model and
+studio renders with Blender's background mode and `scripts/build-violin.py`.
+Run `node scripts/validate-model.mjs` to check geometry, materials, embedded
+textures, and the GLB structure. GitHub Actions runs this before the static build.
+The loading/WebGL fallback is a studio render of this same model.
+
+`src/lib/sculptures.ts` builds the gyroscopic aircraft, neural constellation, and
+feedback knot. `src/components/object-lab.tsx` provides selection and motion controls.
+
+Drag horizontally or vertically to rotate (touch preserves vertical page scrolling).
+Keyboard users can focus the sculpture, rotate with the arrow keys, and reset with
+Home. Each object's action produces a visual response; the experience is silent.
+Reduced motion retains the 3D objects and explicit controls while disabling idle
+animation and using a static response. Rendering pauses offscreen and in hidden
+tabs. WebGL failure leaves a lightweight illustration and the portfolio content.
+
+`src/components/guidance-stage.tsx` owns renderer lifecycle, responsive sizing,
+visibility, pointer input, and GPU resource disposal. Materials and geometries are
+cached only for objects the visitor has selected. Pixel ratio is capped at 1.6.
+
+## Proportions
 
 | Token | Value |
 | --- | --- |
@@ -20,7 +54,9 @@ Production portfolio for **GitHub Pages** (`https://sauravoftechnion.github.io`)
 | Major / minor split | 61.8% / 38.2% |
 | Card / visual aspect | ≈ 1.618∶1 |
 
-Tokens live in `src/app/globals.css` and `src/lib/phi.ts`.
+The original φ constants remain in `src/lib/phi.ts`. The current layout uses
+responsive typography and a 1.618:1 content split, with design tokens in
+`src/app/globals.css`.
 
 ## Update projects
 
@@ -84,8 +120,8 @@ NEXT_PUBLIC_BASE_PATH=/your-repo-name npm run build
 
 - Skip link, keyboard focus rings, semantic landmarks
 - Dark-first with light mode; system preference supported
-- WCAG-oriented contrast on charcoal / indigo / cool paper palette
-- Responsive φ layout from mobile → desktop
+- Ink-blue / porcelain palette with copper, ice-blue, violet, and sea-glass accents
+- Responsive layout from mobile → desktop, keyboard-accessible 3D controls
 
 ## License
 

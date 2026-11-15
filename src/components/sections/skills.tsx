@@ -6,7 +6,7 @@ export function Skills() {
       <div className="section-head">
         <h2 id="skills-title">Skills</h2>
         <p className="section-lede">
-          Grouped for scanability — languages, AI/ML, engineering simulation, and tooling.
+          The tools I reach for, from first principles to production.
         </p>
       </div>
       <div className="skills-grid">

@@ -60,17 +60,17 @@ export function Projects({ projects }: { projects: Project[] }) {
     >
       <div className="section-head split-phi">
         <div>
-          <h2 id="projects-title">Projects</h2>
+          <h2 id="projects-title">Ideas, made real.</h2>
           <p className="section-lede">
             Public repositories from{" "}
             <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer">
               @{profile.github}
             </a>
-            . Stars refresh at build time from the GitHub API.
+            . Open experiments in intelligence, simulation, and useful software.
           </p>
         </div>
         <p className="section-aside">
-          Centerpiece: simulation, world models, CUDA, on-device AI, and LLM tooling.
+          Built to understand something. Shared so others can, too.
         </p>
       </div>
 

@@ -1,343 +1,200 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import Image from "next/image";
 import { GoldenSpiral } from "@/components/golden-spiral";
+import type { SculptureKind } from "@/lib/sculptures";
 
-/**
- * One object: a frosted violin, with the variable-L1 lookahead
- * traveling a golden spiral around it. Decorative. The page copy
- * carries the meaning if WebGL is unavailable.
- */
-export function GuidanceStage() {
+type Props = { kind: SculptureKind; paused: boolean; impulse: number; reset: number };
+
+/** Lazy, shared renderer; animation and pointer state never cause React renders. */
+export function GuidanceStage(props: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const [failed, setFailed] = useState(false);
+  const controls = useRef(props);
+  const wake = useRef(() => {});
+  const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const helpId = useId();
+  useEffect(() => { controls.current = props; wake.current(); }, [props]);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-
     let disposed = false;
-    let cleanup = () => {};
-
-    void import("three").then(async (THREE) => {
-      if (disposed || !hostRef.current) return;
-
-      let RoomEnvironment: new () => import("three").Scene;
+    let teardown = () => {};
+    let started = false;
+    const initialize = async () => {
+      if (started || disposed) return;
+      started = true;
       try {
-        ({ RoomEnvironment } = await import(
-          "three/addons/environments/RoomEnvironment.js"
-        ));
-      } catch {
-        setFailed(true);
-        return;
-      }
-
-      const hostEl = hostRef.current;
-      const renderer = new THREE.WebGLRenderer({
-        alpha: true,
-        antialias: true,
-        powerPreference: "high-performance",
-      });
-      if (!renderer.getContext()) {
-        setFailed(true);
-        renderer.dispose();
-        return;
-      }
-
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
-      renderer.setClearColor(0x000000, 0);
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.05;
-      hostEl.appendChild(renderer.domElement);
-
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
-      camera.position.set(0.15, 0.15, 4.15);
-
-      const pmrem = new THREE.PMREMGenerator(renderer);
-      const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-      scene.environment = env;
-
-      const resin = new THREE.Color("#e2b07a");
-      const optic = new THREE.Color("#9aa6ff");
-
-      const glass = new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color("#efe6d4"),
-        metalness: 0,
-        roughness: 0.08,
-        transmission: 0.62,
-        thickness: 0.45,
-        ior: 1.5,
-        clearcoat: 1,
-        clearcoatRoughness: 0.08,
-        attenuationColor: new THREE.Color("#e2b07a"),
-        attenuationDistance: 1.4,
-      });
-      const ebony = new THREE.MeshStandardMaterial({
-        color: "#1a120c",
-        roughness: 0.45,
-        metalness: 0.05,
-      });
-      const stringMat = new THREE.MeshStandardMaterial({
-        color: "#f4efe4",
-        roughness: 0.35,
-        metalness: 0.4,
-      });
-      const pathMat = new THREE.MeshStandardMaterial({
-        color: resin,
-        emissive: resin,
-        emissiveIntensity: 0.35,
-        roughness: 0.4,
-      });
-      const craftMat = new THREE.MeshStandardMaterial({
-        color: optic,
-        emissive: optic,
-        emissiveIntensity: 0.8,
-        roughness: 0.3,
-      });
-
-      const instrument = new THREE.Group();
-
-      const bodyShape = new THREE.Shape();
-      bodyShape.moveTo(0, 0.92);
-      bodyShape.bezierCurveTo(0.22, 1.02, 0.48, 0.98, 0.52, 0.72);
-      bodyShape.lineTo(0.34, 0.48);
-      bodyShape.bezierCurveTo(0.16, 0.32, 0.12, 0.12, 0.16, -0.02);
-      bodyShape.bezierCurveTo(0.2, -0.16, 0.36, -0.22, 0.5, -0.38);
-      bodyShape.lineTo(0.62, -0.58);
-      bodyShape.bezierCurveTo(0.7, -0.86, 0.48, -1.22, 0, -1.26);
-      bodyShape.bezierCurveTo(-0.48, -1.22, -0.7, -0.86, -0.62, -0.58);
-      bodyShape.lineTo(-0.5, -0.38);
-      bodyShape.bezierCurveTo(-0.36, -0.22, -0.2, -0.16, -0.16, -0.02);
-      bodyShape.bezierCurveTo(-0.12, 0.12, -0.16, 0.32, -0.34, 0.48);
-      bodyShape.lineTo(-0.52, 0.72);
-      bodyShape.bezierCurveTo(-0.48, 0.98, -0.22, 1.02, 0, 0.92);
-
-      const body = new THREE.Mesh(
-        new THREE.ExtrudeGeometry(bodyShape, {
-          depth: 0.28,
-          bevelEnabled: true,
-          bevelThickness: 0.04,
-          bevelSize: 0.035,
-          bevelSegments: 2,
-          curveSegments: 20,
-        }),
-        glass,
-      );
-      body.position.z = -0.14;
-      instrument.add(body);
-
-      const neck = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.62, 0.07), ebony);
-      neck.position.set(0, 1.22, 0.02);
-      instrument.add(neck);
-
-      const fingerboard = new THREE.Mesh(
-        new THREE.BoxGeometry(0.09, 1.15, 0.025),
-        ebony,
-      );
-      fingerboard.position.set(0, 0.95, 0.12);
-      instrument.add(fingerboard);
-
-      const scrollPoints: import("three").Vector3[] = [];
-      for (let i = 0; i < 40; i += 1) {
-        const t = i / 39;
-        const angle = t * Math.PI * 2.1;
-        const radius = 0.13 * (1 - t * 0.55);
-        scrollPoints.push(
-          new THREE.Vector3(Math.sin(angle) * radius, 1.62 + t * 0.22, Math.cos(angle) * radius * 0.65),
-        );
-      }
-      instrument.add(
-        new THREE.Mesh(
-          new THREE.TubeGeometry(new THREE.CatmullRomCurve3(scrollPoints), 48, 0.032, 8, false),
-          ebony,
-        ),
-      );
-
-      for (let i = 0; i < 4; i += 1) {
-        const peg = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.1, 8), ebony);
-        peg.rotation.z = Math.PI / 2;
-        peg.position.set(i < 2 ? -0.07 : 0.07, 1.68 - (i % 2) * 0.07, 0);
-        instrument.add(peg);
-      }
-
-      const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.07, 0.025), ebony);
-      bridge.position.set(0, -0.12, 0.18);
-      instrument.add(bridge);
-
-      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.16, 0.02), ebony);
-      tail.position.set(0, -0.95, 0.16);
-      instrument.add(tail);
-
-      for (let i = 0; i < 4; i += 1) {
-        const x = -0.04 + i * 0.027;
-        const string = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.0035, 0.0035, 2.35, 6),
-          stringMat,
-        );
-        string.position.set(x, 0.28, 0.16);
-        instrument.add(string);
-      }
-
-      const fHoleMat = new THREE.MeshStandardMaterial({
-        color: "#120e0c",
-        roughness: 0.6,
-      });
-      for (const sign of [1, -1]) {
-        const hole: import("three").Vector3[] = [];
-        for (let i = 0; i <= 20; i += 1) {
-          const t = i / 20;
-          hole.push(
-            new THREE.Vector3(
-              sign * (0.2 + Math.sin(t * Math.PI) * 0.045 * (t < 0.5 ? 1 : -0.6)),
-              0.38 - t * 0.78,
-              0.2,
-            ),
-          );
+        const [T, { RoomEnvironment }, { createSculpture }] = await Promise.all([
+          import("three"), import("three/addons/environments/RoomEnvironment.js"), import("@/lib/sculptures"),
+        ]);
+        if (disposed) return;
+        const renderer = new T.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
+        teardown = () => { renderer.dispose(); renderer.domElement.remove(); };
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+        renderer.setClearColor(0, 0);
+        renderer.toneMapping = T.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 0.9;
+        renderer.domElement.setAttribute("aria-hidden", "true");
+        host.appendChild(renderer.domElement);
+        const scene = new T.Scene();
+        const camera = new T.PerspectiveCamera(35, 1, 0.1, 50);
+        const pmrem = new T.PMREMGenerator(renderer);
+        const room = new RoomEnvironment();
+        const environment = pmrem.fromScene(room, 0.04);
+        room.dispose(); pmrem.dispose();
+        teardown = () => { environment.dispose(); renderer.dispose(); renderer.domElement.remove(); };
+        scene.environment = environment.texture;
+        scene.add(new T.HemisphereLight(0xfff4db, 0x353c29, 1.4));
+        const key = new T.DirectionalLight(0xffedd2, 2.5); key.position.set(-3, 4, 5);
+        const rim = new T.DirectionalLight(0xe4efd5, 2); rim.position.set(3, 1, -2);
+        scene.add(key, rim);
+        const pivot = new T.Group(); scene.add(pivot);
+        const cache = new Map<SculptureKind, Awaited<ReturnType<typeof createSculpture>>>();
+        const failedKinds = new Set<SculptureKind>();
+        let kind = controls.current.kind;
+        let stageReady = true;
+        let sculpture: Awaited<ReturnType<typeof createSculpture>>;
+        try { sculpture = await createSculpture(kind); }
+        catch {
+          failedKinds.add(kind); stageReady = false;
+          kind = "flight"; sculpture = await createSculpture(kind);
         }
-        instrument.add(
-          new THREE.Mesh(
-            new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hole), 24, 0.012, 6, false),
-            fHoleMat,
-          ),
-        );
-      }
-
-      const bow = new THREE.Group();
-      const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.008, 1.55, 8), pathMat);
-      const hair = new THREE.Mesh(new THREE.BoxGeometry(0.01, 1.28, 0.008), stringMat);
-      hair.position.x = 0.03;
-      bow.add(stick, hair);
-      bow.position.set(0.95, 0.05, 0.42);
-      bow.rotation.z = 0.22;
-      instrument.add(bow);
-
-      const spiral: import("three").Vector3[] = [];
-      for (let i = 0; i <= 90; i += 1) {
-        const t = i / 90;
-        const angle = -2.2 + t * Math.PI * 1.35;
-        const radius = 1.05 * Math.pow(1.618, t * 0.55);
-        spiral.push(
-          new THREE.Vector3(Math.cos(angle) * radius * 0.85, Math.sin(angle) * radius * 0.7, 0.62),
-        );
-      }
-      const flight = new THREE.CatmullRomCurve3(spiral);
-      instrument.add(
-        new THREE.Mesh(new THREE.TubeGeometry(flight, 80, 0.011, 8, false), pathMat),
-      );
-
-      const craft = new THREE.Mesh(new THREE.SphereGeometry(0.045, 20, 20), craftMat);
-      const lookahead = new THREE.Mesh(
-        new THREE.SphereGeometry(0.028, 16, 16),
-        pathMat,
-      );
-      instrument.add(craft, lookahead);
-      scene.add(instrument);
-
-      scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-      const key = new THREE.DirectionalLight(resin, 2.4);
-      key.position.set(-2.2, 2.4, 3.2);
-      scene.add(key);
-      const fill = new THREE.DirectionalLight(optic, 1.8);
-      fill.position.set(2.4, 0.2, 2.6);
-      scene.add(fill);
-      const front = new THREE.PointLight(0xfff6ea, 12, 10);
-      front.position.set(0.2, 0.2, 2.4);
-      scene.add(front);
-
-      const bounds = new THREE.Box3().setFromObject(instrument);
-      instrument.position.sub(bounds.getCenter(new THREE.Vector3()));
-      const fitted = bounds.getSize(new THREE.Vector3());
-      const fitCamera = () => {
-        const vertical = (camera.fov * Math.PI) / 180;
-        const horizontal = 2 * Math.atan(Math.tan(vertical / 2) * camera.aspect);
-        const distanceY = fitted.y / 2 / Math.tan(vertical / 2);
-        const distanceX = fitted.x / 2 / Math.tan(horizontal / 2);
-        camera.position.z = Math.max(distanceX, distanceY) * 1.28;
-        camera.lookAt(0, 0, 0);
-      };
-      fitCamera();
-
-      let targetX = 0;
-      let targetY = 0.62;
-      let visible = true;
-      const pointer = (event: PointerEvent) => {
-        const rect = hostEl.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / rect.width - 0.5;
-        const y = (event.clientY - rect.top) / rect.height - 0.5;
-        targetY = 0.62 + x * 0.45;
-        targetX = -y * 0.28;
-      };
-      hostEl.addEventListener("pointermove", pointer);
-
-      const resize = () => {
-        const width = hostEl.clientWidth || 1;
-        const height = hostEl.clientHeight || 1;
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-        renderer.setSize(width, height, false);
-        fitCamera();
-      };
-      resize();
-      const observer = new ResizeObserver(resize);
-      observer.observe(hostEl);
-      const visibility = new IntersectionObserver(
-        ([entry]) => {
-          visible = entry?.isIntersecting ?? true;
-        },
-        { threshold: 0.05 },
-      );
-      visibility.observe(hostEl);
-
-      const started = performance.now();
-      let frame = 0;
-      const tick = () => {
-        frame = window.requestAnimationFrame(tick);
-        if (!visible || document.hidden) return;
-        const time = (performance.now() - started) / 1000;
-        const along = (time * 0.045) % 1;
-        craft.position.copy(flight.getPointAt(along));
-        lookahead.position.copy(flight.getPointAt((along + 0.07) % 1));
-        instrument.rotation.y += (targetY - instrument.rotation.y) * 0.05;
-        instrument.rotation.x += (targetX - instrument.rotation.x) * 0.05;
-        renderer.render(scene, camera);
-      };
-      tick();
-
-      cleanup = () => {
-        window.cancelAnimationFrame(frame);
-        hostEl.removeEventListener("pointermove", pointer);
-        observer.disconnect();
-        visibility.disconnect();
-        scene.traverse((object) => {
-          const mesh = object as import("three").Mesh;
-          if (mesh.geometry) mesh.geometry.dispose();
-          const material = mesh.material;
-          if (Array.isArray(material)) material.forEach((item) => item.dispose());
-          else material?.dispose();
-        });
-        env.dispose();
-        pmrem.dispose();
-        renderer.dispose();
-        renderer.domElement.remove();
-      };
-    });
-
-    return () => {
-      disposed = true;
-      cleanup();
+        if (disposed) { sculpture.root.traverse((object) => { const mesh = object as import("three").Mesh; mesh.geometry?.dispose(); if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose()); else mesh.material?.dispose(); }); environment.dispose(); renderer.dispose(); renderer.domElement.remove(); return; }
+        cache.set(kind, sculpture); pivot.add(sculpture.root);
+        const dust = new Float32Array(180 * 3);
+        for (let i = 0; i < 180; i++) {
+          const a = i * 2.399963; const r = 2.2 + (i % 19) * 0.09;
+          dust[i * 3] = Math.cos(a) * r; dust[i * 3 + 1] = Math.sin(a) * r; dust[i * 3 + 2] = Math.sin(i * 17.3) * 1.5 - 1;
+        }
+        const dustGeo = new T.BufferGeometry(); dustGeo.setAttribute("position", new T.BufferAttribute(dust, 3));
+        const dustMat = new T.PointsMaterial({ color: 0xa3b8e9, size: 0.014, transparent: true, opacity: 0.55 });
+        scene.add(new T.Points(dustGeo, dustMat));
+        let frame = 0, time = 0, last = 0, energy = 0, targetX = 0, targetY = 0, pointerX = 0, pointerY = 0;
+        let visible = true, dragging = false, contextFailed = false, loading = false;
+        let lastPointerX = 0, lastPointerY = 0;
+        let lastImpulse = controls.current.impulse, lastReset = controls.current.reset;
+        const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+        const render = (now: number) => {
+          frame = 0;
+          if (disposed || !visible || document.hidden || contextFailed) return;
+          const state = controls.current;
+          const dt = Math.min((now - (last || now)) / 1000, 0.04); last = now;
+          if (kind === state.kind && !stageReady) { stageReady = true; setStatus("ready"); }
+          if (kind !== state.kind) {
+            if (failedKinds.has(state.kind)) {
+              if (stageReady) { stageReady = false; setStatus("failed"); }
+            } else {
+            const cached = cache.get(state.kind);
+            if (cached) {
+              pivot.remove(sculpture.root); kind = state.kind; sculpture = cached; pivot.add(sculpture.root);
+              targetX = targetY = pointerX = pointerY = energy = 0;
+              if (!stageReady) { stageReady = true; setStatus("ready"); }
+            } else if (!loading) {
+              loading = true;
+              void createSculpture(state.kind).then((next) => {
+                if (disposed) { next.root.traverse((object) => { const mesh = object as import("three").Mesh; mesh.geometry?.dispose(); if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose()); else mesh.material?.dispose(); }); return; }
+                cache.set(state.kind, next); loading = false; request();
+              }).catch(() => { failedKinds.add(state.kind); loading = false; stageReady = false; if (!disposed) setStatus("failed"); });
+            }
+            }
+          }
+          if (lastReset !== state.reset) { targetX = targetY = pointerX = pointerY = 0; lastReset = state.reset; }
+          if (lastImpulse !== state.impulse) { energy = 1; lastImpulse = state.impulse; }
+          const animated = stageReady && !state.paused && !motion.matches;
+          if (animated) { time += dt; energy *= Math.exp(-dt * 1.6); }
+          const blend = motion.matches ? 1 : 1 - Math.exp(-dt * 9);
+          const x = targetX + (motion.matches ? 0 : pointerY * 0.1);
+          const y = targetY + (motion.matches ? 0 : pointerX * 0.17);
+          pivot.rotation.x += (x - pivot.rotation.x) * blend;
+          pivot.rotation.y += (y - pivot.rotation.y) * blend;
+          pivot.position.y = animated ? Math.sin(time * 0.65) * 0.045 : 0;
+          sculpture.update(time, energy, motion.matches);
+          renderer.render(scene, camera);
+          const settling = Math.abs(x - pivot.rotation.x) + Math.abs(y - pivot.rotation.y) > 0.001;
+          if (animated || settling) frame = requestAnimationFrame(render);
+        };
+        const request = () => {
+          if (!frame && visible && !document.hidden && !disposed && !contextFailed) { last = performance.now(); frame = requestAnimationFrame(render); }
+        };
+        wake.current = request;
+        const resize = () => {
+          const width = Math.max(host.clientWidth, 1), height = Math.max(host.clientHeight, 1);
+          camera.aspect = width / height; camera.position.set(0, 0.05, Math.max(7.8, 7 / camera.aspect));
+          camera.updateProjectionMatrix(); renderer.setSize(width, height, false); request();
+        };
+        const down = (event: PointerEvent) => {
+          if (event.button !== 0) return;
+          dragging = true; lastPointerX = event.clientX; lastPointerY = event.clientY;
+          host.setPointerCapture(event.pointerId); host.dataset.dragging = "true";
+        };
+        const move = (event: PointerEvent) => {
+          const rect = host.getBoundingClientRect();
+          pointerX = (event.clientX - rect.left) / rect.width - 0.5; pointerY = (event.clientY - rect.top) / rect.height - 0.5;
+          if (dragging) {
+            targetY += (event.clientX - lastPointerX) * 0.008;
+            targetX = T.MathUtils.clamp(targetX + (event.clientY - lastPointerY) * 0.005, -0.8, 0.8);
+            lastPointerX = event.clientX; lastPointerY = event.clientY;
+          }
+          request();
+        };
+        const up = () => { dragging = false; host.dataset.dragging = "false"; };
+        const leave = () => { pointerX = pointerY = 0; request(); };
+        const keyboard = (event: KeyboardEvent) => {
+          if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home"].includes(event.key)) return;
+          event.preventDefault();
+          if (event.key === "ArrowLeft") targetY -= 0.2;
+          if (event.key === "ArrowRight") targetY += 0.2;
+          if (event.key === "ArrowUp") targetX = Math.max(-0.8, targetX - 0.15);
+          if (event.key === "ArrowDown") targetX = Math.min(0.8, targetX + 0.15);
+          if (event.key === "Home") targetX = targetY = 0;
+          request();
+        };
+        const visibilityChange = () => { if (document.hidden) { cancelAnimationFrame(frame); frame = 0; } else request(); };
+        const contextLost = (event: Event) => { event.preventDefault(); contextFailed = true; cancelAnimationFrame(frame); setStatus("failed"); };
+        host.addEventListener("pointerdown", down); host.addEventListener("pointermove", move);
+        host.addEventListener("pointerup", up); host.addEventListener("pointercancel", up); host.addEventListener("lostpointercapture", up);
+        host.addEventListener("pointerleave", leave); host.addEventListener("keydown", keyboard);
+        renderer.domElement.addEventListener("webglcontextlost", contextLost);
+        document.addEventListener("visibilitychange", visibilityChange); motion.addEventListener("change", request);
+        const sizeObserver = new ResizeObserver(resize); sizeObserver.observe(host);
+        const visibilityObserver = new IntersectionObserver(([entry]) => {
+          visible = entry.isIntersecting; if (visible) request(); else { cancelAnimationFrame(frame); frame = 0; }
+        }); visibilityObserver.observe(host);
+        teardown = () => {
+          cancelAnimationFrame(frame); wake.current = () => {};
+          sizeObserver.disconnect(); visibilityObserver.disconnect();
+          host.removeEventListener("pointerdown", down); host.removeEventListener("pointermove", move);
+          host.removeEventListener("pointerup", up); host.removeEventListener("pointercancel", up); host.removeEventListener("lostpointercapture", up);
+          host.removeEventListener("pointerleave", leave); host.removeEventListener("keydown", keyboard);
+          renderer.domElement.removeEventListener("webglcontextlost", contextLost);
+          document.removeEventListener("visibilitychange", visibilityChange); motion.removeEventListener("change", request);
+          const geometries = new Set<import("three").BufferGeometry>(), materials = new Set<import("three").Material>(), textures = new Set<import("three").Texture>();
+          cache.forEach(({ root }) => root.traverse((object) => {
+            const objectMesh = object as import("three").Mesh;
+            if (objectMesh.geometry) geometries.add(objectMesh.geometry);
+            if (Array.isArray(objectMesh.material)) objectMesh.material.forEach((material) => materials.add(material));
+            else if (objectMesh.material) materials.add(objectMesh.material);
+          }));
+          materials.forEach((material) => { for (const value of Object.values(material)) if (value instanceof T.Texture) textures.add(value); material.dispose(); });
+          geometries.forEach((geometry) => geometry.dispose()); textures.forEach((texture) => texture.dispose());
+          dustGeo.dispose(); dustMat.dispose(); environment.dispose(); renderer.dispose(); renderer.domElement.remove();
+        };
+        resize(); setStatus(stageReady ? "ready" : "failed");
+      } catch { teardown(); if (!disposed) setStatus("failed"); }
     };
+    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { observer.disconnect(); void initialize(); } }, { rootMargin: "150px" });
+    observer.observe(host);
+    return () => { disposed = true; observer.disconnect(); teardown(); };
   }, []);
 
-  if (failed) return <GoldenSpiral />;
-
-  return (
-    <div
-      ref={hostRef}
-      className="hero-stage"
-      role="img"
-      aria-label="Frosted glass violin with a golden-ratio guidance path. A point of light travels the spiral ahead of a second point, the way a guidance law looks ahead of an aircraft."
-    />
-  );
+  return <>
+    <div ref={hostRef} className="sculpture-canvas" tabIndex={status === "ready" ? 0 : -1} role="group"
+      aria-label={`Interactive ${props.kind} sculpture`} aria-describedby={helpId} data-status={status} />
+    <span id={helpId} className="sr-only">Drag to rotate. Keyboard: arrow keys rotate, Home resets the view.</span>
+    {status !== "ready" && <div className="stage-fallback">
+      {props.kind === "violin" ? <Image src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/models/violin-preview.png`} alt="Studio render of the original Blender violin and bow" fill sizes="(max-width: 760px) 88vw, 50vw" className="violin-preview" /> : <GoldenSpiral />}
+      <p role="status">{status === "failed" ? "3D could not load. Try another sculpture or reload." : "Preparing the instrument…"}</p></div>}
+  </>;
 }
